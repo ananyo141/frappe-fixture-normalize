@@ -113,6 +113,8 @@ Layers:
 | 76 | Consumer `fixture_normalize_split_by` override | L1 | `test_commands.py::test_resolve_split_config_merges_list_of_dicts` (config resolution) + manual hook in consumer app's `hooks.py` |
 | 77 | Loader: discovers installed apps via frappe API | L2 | `test_loader_hook.py::test_default_discovers_installed_apps` |
 | 78 | Loader: empty app path noop | L2 | `test_loader_hook.py::test_empty_app_path_is_noop` |
+| 78a | `bench export-fixtures` overridden via name collision | L1 | `test_commands.py::test_commands_export_list_contains_all_entries` + `test_export_fixtures_override_iterates_sites` |
+| 78b | Override raises SiteNotSpecifiedError | L1 | `test_commands.py::test_export_fixtures_override_raises_when_no_site` |
 
 ## End-to-end scenarios
 

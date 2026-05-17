@@ -134,10 +134,33 @@ def test_normalize_command_raises_when_no_site(monkeypatch):
 # --- commands list registration ------------------------------------------
 
 
-def test_commands_export_list_contains_both_entries(monkeypatch):
+def test_commands_export_list_contains_all_entries(monkeypatch):
     commands, _ = _install_frappe_stub(monkeypatch)
     names = {c.name for c in commands.commands}
-    assert names == {"export-clean-fixtures", "normalize-fixtures"}
+    assert names == {"export-clean-fixtures", "normalize-fixtures", "export-fixtures"}
+
+
+def test_export_fixtures_override_raises_when_no_site(monkeypatch):
+    commands, SiteNotSpecifiedError = _install_frappe_stub(monkeypatch)
+    ctx = _NoSiteContext()
+    with pytest.raises(SiteNotSpecifiedError):
+        commands.export_fixtures_override.callback(ctx, app=None)
+
+
+def test_export_fixtures_override_iterates_sites(monkeypatch, tmp_path):
+    """Sanity: the override command threads --app through to `_run_for_site`
+    exactly like `export-clean-fixtures`."""
+    commands, _ = _install_frappe_stub(
+        monkeypatch,
+        installed_apps=["apex"],
+        app_paths={"apex": str(tmp_path)},
+    )
+    (tmp_path / "fixtures").mkdir()
+    invoked = []
+    monkeypatch.setattr(commands, "_run_for_site", lambda site, app: invoked.append((site, app)))
+    ctx = _MultiSiteContext(["a.localhost"])
+    commands.export_fixtures_override.callback(ctx, app="apex")
+    assert invoked == [("a.localhost", "apex")]
 
 
 # --- happy path through `_run_for_site` (export pipeline) ----------------

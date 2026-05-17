@@ -21,9 +21,12 @@ bench --site <site> install-app frappe_fixture_normalize
 
 ## Export
 
-Replace `bench export-fixtures` with:
+Once installed, stock `bench export-fixtures` is automatically overridden — every export goes through this app's pipeline. Frappe's CLI dict-merges each installed app's `commands.py:commands` list in `apps.txt` order
+(`frappe/utils/bench_helper.py:get_app_groups`), so the entry from this app wins over frappe's own.
 
 ```bash
+bench --site <site> export-fixtures --app <your_app>
+# or, explicit name (same behavior; useful in scripts that want to bypass the override):
 bench --site <site> export-clean-fixtures --app <your_app>
 ```
 

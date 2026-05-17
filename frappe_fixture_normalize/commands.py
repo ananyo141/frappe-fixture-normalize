@@ -109,4 +109,26 @@ def normalize_fixtures(context, app=None):
         raise SiteNotSpecifiedError
 
 
-commands = [export_clean_fixtures, normalize_fixtures]
+@click.command("export-fixtures")
+@click.option("--app", default=None, help="Export fixtures of a specific app (default: all installed)")
+@pass_context
+def export_fixtures_override(context, app=None):
+    """Drop-in replacement for `bench export-fixtures` that produces stable,
+    merge-safe output.
+
+    Frappe assembles its CLI by dict-merging each installed app's `commands`
+    list in `apps.txt` order (frappe/utils/bench_helper.py:get_app_groups).
+    Apps installed after frappe — like this one — override earlier
+    same-named entries, so running `bench export-fixtures` lands here.
+
+    Behavior is identical to `bench export-clean-fixtures`; the explicit
+    name is kept for documentation, scripts, and tests that want to bypass
+    the override.
+    """
+    for site in context.sites:
+        _run_for_site(site, app)
+    if not context.sites:
+        raise SiteNotSpecifiedError
+
+
+commands = [export_clean_fixtures, normalize_fixtures, export_fixtures_override]
