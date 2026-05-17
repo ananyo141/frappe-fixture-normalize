@@ -2,9 +2,14 @@
 # Shared helpers for e2e scripts. Source from each scenario.
 #
 # Required env (set by run_all.sh or caller):
-#   BENCH_DIR  — absolute path to the bench root (e.g. /workspace/development/frappe-bench)
-#   SITE       — site name (e.g. apex.localhost)
-#   APP        — consumer app under test (e.g. apex)
+#   BENCH_DIR  — absolute path to the bench root (e.g. /workspace/frappe-bench)
+#   SITE       — site name (e.g. myapp.localhost)
+#   APP        — consumer app under test (e.g. myapp)
+#
+# Optional env for scripts that insert Custom Fields (03, 04):
+#   MODULE     — Frappe module to tag the inserted Custom Field with so
+#                the consumer app's `fixtures` hook picks it up. Defaults
+#                to "Custom" — override to match your consumer's filter.
 #
 # Optional:
 #   FIXTURES_DIR — absolute path to <bench>/apps/<APP>/<APP>/fixtures (auto-derived)

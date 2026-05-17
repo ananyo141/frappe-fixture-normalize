@@ -17,7 +17,7 @@ baseline="$(mktemp -d)"; register_temp_dir "$baseline"
 cp -r "$FIXTURES_DIR/." "$baseline/"
 
 # Add one Custom Field to Issue.
-cf_name="$(insert_custom_field 'Issue' 'e2e_ffn_single_field' 'Apex')"
+cf_name="$(insert_custom_field 'Issue' 'e2e_ffn_single_field' "${MODULE:-Custom}")"
 register_temp_field "$cf_name"
 
 bench_exec export-clean-fixtures --app "$APP" > /dev/null

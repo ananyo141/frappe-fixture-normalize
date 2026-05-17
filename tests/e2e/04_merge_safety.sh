@@ -24,13 +24,13 @@ cp -r "$FIXTURES_DIR/." "$sandbox/"
     && git add . && git commit -qm baseline)
 
 # Branch A: field to Issue.
-cf_a="$(insert_custom_field 'Issue' 'e2e_ffn_merge_a' 'Apex')"; register_temp_field "$cf_a"
+cf_a="$(insert_custom_field 'Issue' 'e2e_ffn_merge_a' "${MODULE:-Custom}")"; register_temp_field "$cf_a"
 bench_exec export-clean-fixtures --app "$APP" > /dev/null
 (cd "$sandbox" && git checkout -qb feat/a && cp -r "$FIXTURES_DIR/." . && git add . && git commit -qm "feat-a")
 delete_custom_field "$cf_a"
 
 # Branch B: field to Subscription.
-cf_b="$(insert_custom_field 'Subscription' 'e2e_ffn_merge_b' 'Apex')"; register_temp_field "$cf_b"
+cf_b="$(insert_custom_field 'Subscription' 'e2e_ffn_merge_b' "${MODULE:-Custom}")"; register_temp_field "$cf_b"
 bench_exec export-clean-fixtures --app "$APP" > /dev/null
 (cd "$sandbox" && git checkout -q main 2>/dev/null || git checkout -q master)
 (cd "$sandbox" && git checkout -qb feat/b && cp -r "$FIXTURES_DIR/." . && git add . && git commit -qm "feat-b")

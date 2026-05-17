@@ -64,7 +64,7 @@ def _install_frappe_stub(monkeypatch, hooks_value=None, installed_apps=None, app
 
 def test_resolve_split_config_returns_defaults_when_hook_missing(monkeypatch):
     commands, _ = _install_frappe_stub(monkeypatch, hooks_value=[])
-    out = commands._resolve_split_config("apex")
+    out = commands._resolve_split_config("myapp")
     assert out == {"Custom Field": "dt", "Property Setter": "doc_type"}
 
 
@@ -76,7 +76,7 @@ def test_resolve_split_config_merges_list_of_dicts(monkeypatch):
             {"Workflow": "document_type"},
         ],
     )
-    out = commands._resolve_split_config("apex")
+    out = commands._resolve_split_config("myapp")
     assert out == {"Custom Field": "dt", "Workflow": "document_type"}
 
 
@@ -85,13 +85,13 @@ def test_resolve_split_config_accepts_plain_dict(monkeypatch):
         monkeypatch,
         hooks_value={"Custom Field": "dt", "Workflow": "document_type"},
     )
-    out = commands._resolve_split_config("apex")
+    out = commands._resolve_split_config("myapp")
     assert out == {"Custom Field": "dt", "Workflow": "document_type"}
 
 
 def test_resolve_split_config_falls_back_on_malformed_hook(monkeypatch):
     commands, _ = _install_frappe_stub(monkeypatch, hooks_value="not a mapping")
-    out = commands._resolve_split_config("apex")
+    out = commands._resolve_split_config("myapp")
     assert out == {"Custom Field": "dt", "Property Setter": "doc_type"}
 
 
@@ -100,13 +100,13 @@ def test_resolve_split_config_skips_non_dict_list_entries(monkeypatch):
         monkeypatch,
         hooks_value=["string", 42, {"Workflow": "document_type"}, None],
     )
-    out = commands._resolve_split_config("apex")
+    out = commands._resolve_split_config("myapp")
     assert out == {"Workflow": "document_type"}
 
 
 def test_resolve_split_config_returns_defaults_when_merged_empty(monkeypatch):
     commands, _ = _install_frappe_stub(monkeypatch, hooks_value=[{}, {}])
-    out = commands._resolve_split_config("apex")
+    out = commands._resolve_split_config("myapp")
     assert out == {"Custom Field": "dt", "Property Setter": "doc_type"}
 
 
@@ -152,15 +152,15 @@ def test_export_fixtures_override_iterates_sites(monkeypatch, tmp_path):
     exactly like `export-clean-fixtures`."""
     commands, _ = _install_frappe_stub(
         monkeypatch,
-        installed_apps=["apex"],
-        app_paths={"apex": str(tmp_path)},
+        installed_apps=["myapp"],
+        app_paths={"myapp": str(tmp_path)},
     )
     (tmp_path / "fixtures").mkdir()
     invoked = []
     monkeypatch.setattr(commands, "_run_for_site", lambda site, app: invoked.append((site, app)))
     ctx = _MultiSiteContext(["a.localhost"])
-    commands.export_fixtures_override.callback(ctx, app="apex")
-    assert invoked == [("a.localhost", "apex")]
+    commands.export_fixtures_override.callback(ctx, app="myapp")
+    assert invoked == [("a.localhost", "myapp")]
 
 
 # --- happy path through `_run_for_site` (export pipeline) ----------------
@@ -177,8 +177,8 @@ def test_run_for_site_invokes_export_then_post_process(monkeypatch, tmp_path):
 
     commands, _ = _install_frappe_stub(
         monkeypatch,
-        installed_apps=["apex"],
-        app_paths={"apex": str(tmp_path)},
+        installed_apps=["myapp"],
+        app_paths={"myapp": str(tmp_path)},
     )
     # Track that export_fixtures was called.
     call_log = []
@@ -192,8 +192,8 @@ def test_run_for_site_invokes_export_then_post_process(monkeypatch, tmp_path):
         tracked_export,
     )
 
-    commands._run_for_site("apex.localhost", "apex")
-    assert call_log == ["apex"]
+    commands._run_for_site("myapp.localhost", "myapp")
+    assert call_log == ["myapp"]
     # Post-process should have split the flat file under split-by config (Custom Field/dt).
     assert (fixtures / "custom_field" / "issue.json").exists()
     assert not flat.exists()
@@ -207,22 +207,22 @@ class _MultiSiteContext:
 def test_export_callback_iterates_sites(monkeypatch, tmp_path):
     commands, _ = _install_frappe_stub(
         monkeypatch,
-        installed_apps=["apex"],
-        app_paths={"apex": str(tmp_path)},
+        installed_apps=["myapp"],
+        app_paths={"myapp": str(tmp_path)},
     )
     (tmp_path / "fixtures").mkdir()
     invoked = []
     monkeypatch.setattr(commands, "_run_for_site", lambda site, app: invoked.append((site, app)))
     ctx = _MultiSiteContext(["a.localhost", "b.localhost"])
-    commands.export_clean_fixtures.callback(ctx, app="apex")
-    assert invoked == [("a.localhost", "apex"), ("b.localhost", "apex")]
+    commands.export_clean_fixtures.callback(ctx, app="myapp")
+    assert invoked == [("a.localhost", "myapp"), ("b.localhost", "myapp")]
 
 
 def test_normalize_callback_iterates_sites(monkeypatch, tmp_path):
     commands, _ = _install_frappe_stub(
         monkeypatch,
-        installed_apps=["apex"],
-        app_paths={"apex": str(tmp_path)},
+        installed_apps=["myapp"],
+        app_paths={"myapp": str(tmp_path)},
     )
     (tmp_path / "fixtures").mkdir()
     invoked = []
@@ -242,8 +242,8 @@ def test_normalize_for_site_skips_export_call(monkeypatch, tmp_path):
 
     commands, _ = _install_frappe_stub(
         monkeypatch,
-        installed_apps=["apex"],
-        app_paths={"apex": str(tmp_path)},
+        installed_apps=["myapp"],
+        app_paths={"myapp": str(tmp_path)},
     )
     call_log = []
     monkeypatch.setattr(
@@ -252,6 +252,6 @@ def test_normalize_for_site_skips_export_call(monkeypatch, tmp_path):
         lambda app=None: call_log.append(app),
     )
 
-    commands._normalize_for_site("apex.localhost", "apex")
+    commands._normalize_for_site("myapp.localhost", "myapp")
     assert call_log == []  # export_fixtures never invoked
     assert (fixtures / "custom_field" / "issue.json").exists()

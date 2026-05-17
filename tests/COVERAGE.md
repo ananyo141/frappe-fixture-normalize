@@ -145,9 +145,9 @@ pytest
 # Layer 2 (inside a frappe bench with the app installed)
 bench --site <site> run-tests --app frappe_fixture_normalize
 
-# Layer 3 (against a real bench + apex.localhost or equivalent)
-BENCH_DIR=/workspace/development/frappe-bench \
-  SITE=apex.localhost APP=apex \
+# Layer 3 (against a real consumer bench + site)
+BENCH_DIR=/path/to/frappe-bench \
+  SITE=myapp.localhost APP=myapp MODULE=MyAppModule \
   bash tests/e2e/run_all.sh
 ```
 

@@ -5,9 +5,9 @@
 # Required env: BENCH_DIR, SITE, APP
 #
 # Example (Lando):
-#   lando ssh -s frappe -c "BENCH_DIR=/workspace/development/frappe-bench \
-#       SITE=apex.localhost APP=apex \
-#       bash /workspace/development/frappe-bench/apps/frappe_fixture_normalize/tests/e2e/run_all.sh"
+#   BENCH_DIR=/path/to/frappe-bench \
+#       SITE=myapp.localhost APP=myapp MODULE=MyAppModule \
+#       bash <BENCH_DIR>/apps/frappe_fixture_normalize/tests/e2e/run_all.sh
 
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
