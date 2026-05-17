@@ -112,6 +112,11 @@ jobs:
             --install-app frappe
           ln -sfn $GITHUB_WORKSPACE/app apps/frappe_fixture_normalize
           ./env/bin/pip install -e apps/frappe_fixture_normalize
+          # Ensure apps.txt has a trailing newline before appending so the
+          # new app doesn't get concatenated to the previous entry.
+          if [ -s sites/apps.txt ] && [ -n "$(tail -c1 sites/apps.txt)" ]; then
+              echo >> sites/apps.txt
+          fi
           echo "frappe_fixture_normalize" >> sites/apps.txt
           bench --site test_site.localhost install-app frappe_fixture_normalize
 
