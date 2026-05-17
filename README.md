@@ -14,12 +14,122 @@ Stable, merge-safe fixture export and import for Frappe apps.
 
 This app fixes all three.
 
-## Install
+## Two adoption paths
+
+| Mode | Setup | What you get |
+|---|---|---|
+| [**Minimal (pre-commit only)**](#minimal-mode-pre-commit-only-no-bench-install) | `pip install pre-commit` + `.pre-commit-config.yaml` | Clean diffs, no `modified` churn, records sorted by `name`. Single-file layout stays. |
+| [**Full app install**](#full-install) | `bench get-app` + `bench install-app` (+ optional pre-commit) | All of the above plus per-target split files, auto-import on `bench migrate`, stock `bench export-fixtures` overridden |
+
+Start minimal. Upgrade to the full app when same-doctype merge conflicts or auto-import become pain points.
+
+## Minimal mode (pre-commit only, no bench install)
+
+No Frappe app installation needed. The `pre-commit` framework runs the normalizer in its own isolated venv. Suitable when you want clean diffs without shipping another app to production.
+
+### What it fixes vs. what it doesn't
+
+| Problem | Minimal mode | Full app |
+|---|---|---|
+| `modified` field churn | ✅ stripped on commit | ✅ |
+| Record order shuffles per machine | ✅ sorted by `name` on commit | ✅ |
+| Wholesale flat-file rewrite | ✅ canonicalized → minimal diff | ✅ |
+| Merge conflicts on single big `custom_field.json` | ❌ still conflicts | ✅ split per target |
+| Auto-import of split files on `bench migrate` | ❌ stock `sync_fixtures` only | ✅ |
+| Stock `bench export-fixtures` override | ❌ | ✅ |
+
+### Setup
+
+In your consumer repo (the one containing `<app>/<app>/fixtures/`):
 
 ```bash
-bench get-app frappe_fixture_normalize <repo-url>
+pip install pre-commit
+```
+
+Add `.pre-commit-config.yaml` at the repo root:
+
+```yaml
+repos:
+  - repo: local
+    hooks:
+      - id: normalize-fixtures
+        name: Normalize Frappe fixture JSON
+        entry: python -m frappe_fixture_normalize.pre_commit_hook
+        language: python
+        additional_dependencies:
+          - git+https://github.com/ananyo141/frappe-fixture-normalize.git
+        files: (^|/)fixtures/.*\.json$
+```
+
+`additional_dependencies` tells the pre-commit framework to spin up an isolated venv, pip-install our package there, and run the hook in that environment. **No `bench install-app` required.** Venv is cached after first run.
+
+Activate the hook:
+
+```bash
+pre-commit install
+```
+
+### Workflow
+
+```bash
+# Dev runs the stock fixture export — produces ugly, machine-specific output.
+bench --site <site> export-fixtures
+git add backend/myapp/myapp/fixtures/custom_field.json
+git commit -m "add field X"
+# Pre-commit fires:
+#   normalized backend/myapp/myapp/fixtures/custom_field.json
+#   exit 1 → commit aborted, file rewritten in canonical form.
+
+git add backend/myapp/myapp/fixtures/custom_field.json
+git commit -m "add field X"
+# Pre-commit passes; commit lands with minimal, sorted, modified-free diff.
+```
+
+Every subsequent commit touching `fixtures/**/*.json` runs the same pipeline.
+
+### Smoke-test the setup
+
+```bash
+mkdir /tmp/test_repo && cd /tmp/test_repo
+git init -q
+mkdir -p fixtures
+
+cat > fixtures/custom_field.json <<'JSON'
+[
+ {"name": "Issue-zzz", "doctype": "Custom Field", "modified": "2025-01-01"},
+ {"name": "Issue-aaa", "doctype": "Custom Field", "modified": "2025-01-02"}
+]
+JSON
+
+cat > .pre-commit-config.yaml <<'YAML'
+repos:
+  - repo: local
+    hooks:
+      - id: normalize-fixtures
+        name: Normalize Frappe fixture JSON
+        entry: python -m frappe_fixture_normalize.pre_commit_hook
+        language: python
+        additional_dependencies:
+          - git+https://github.com/ananyo141/frappe-fixture-normalize.git
+        files: (^|/)fixtures/.*\.json$
+YAML
+
+git add .
+git commit -m "initial"   # first run builds venv (~10s), then rewrites + fails
+git add .
+git commit -m "initial"   # passes; inspect fixtures/custom_field.json
+```
+
+Expected: records sorted by `name`, `modified` stripped, file ends with a trailing newline.
+
+## Full install
+
+```bash
+bench get-app https://github.com/ananyo141/frappe-fixture-normalize.git
 bench --site <site> install-app frappe_fixture_normalize
 ```
+
+After install, the sections below describe the behavior unlocked.
 
 ## Export
 
