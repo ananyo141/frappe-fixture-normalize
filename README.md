@@ -4,15 +4,59 @@
 
 Stable, merge-safe fixture export and import for Frappe apps.
 
-## What it solves
+## Demo
 
-`bench export-fixtures` rewrites fixture files wholesale on every export:
+![Demo](tests/demo/demo.svg)
 
-- Records are ordered by `creation` timestamp, which differs per machine, so order shuffles.
-- The per-record `modified` timestamp leaks into the diff.
-- All Custom Field / Property Setter records share one large file, so independent feature branches always conflict.
+> Cast source: [`tests/demo/demo.cast`](tests/demo/demo.cast). Rendered with
+> `svg-term --cast tests/demo/demo.cast --out tests/demo/demo.svg --window --width 100 --height 28`.
+> Re-record against your bench: see [`tests/demo/README.md`](tests/demo/README.md).
 
-This app fixes all three.
+## The problem
+
+Every Frappe project that uses fixtures hits the same three issues with stock `bench export-fixtures`:
+
+1. **Per-machine ordering.** Records are exported `ORDER BY idx, creation` (`frappe/utils/fixtures.py:99`). The `creation` timestamp differs per dev environment, so the order of records shuffles between machines. Two devs running `export-fixtures` on the same DB get different files.
+
+2. **`modified` timestamp leak.** Frappe's export strips `creation`, `owner`, `idx` etc., but not `modified` (`frappe/core/doctype/data_import/data_import.py:343-362`). Every record's ISO timestamp ends up in the JSON, so every export looks like a per-record rewrite — even when nothing changed.
+
+3. **Single flat file per doctype.** All Custom Field records — across every target doctype — live in one `custom_field.json`. With a real project this is hundreds of records in a 250 KB+ file. Two devs adding fields to *different* doctypes on *different* branches still merge-conflict on the same file.
+
+Result: every `export-fixtures` run produces a wholesale rewrite, every PR carries hundreds of "noise" lines, and any concurrent fixture work means manual conflict resolution.
+
+## Frappe default vs. this app
+
+| Behavior | Stock `bench export-fixtures` | `frappe_fixture_normalize` |
+|---|---|---|
+| Record order | `ORDER BY idx, creation` — varies per machine | Sorted alphabetically by `name` — deterministic |
+| `modified` field | Kept in every record | Stripped |
+| File layout for Custom Field | One flat `custom_field.json` | `custom_field/<target_doctype>.json` (one per target) |
+| File layout for Property Setter | One flat `property_setter.json` | `property_setter/<target_doctype>.json` (one per target) |
+| Trailing newline on output | No | Yes (POSIX) |
+| Re-export with no DB changes | Wholesale rewrite (timestamps + reorder) | Zero diff |
+| Two devs add fields to different doctypes | Merge conflict on `custom_field.json` | Auto-merge (different files) |
+| `bench migrate` imports split files | No — only `fixtures/*.json` at top level | Yes — `after_migrate` hook walks `fixtures/<doctype>/*.json` |
+| `bench export-fixtures` command | Stock | Auto-overridden via `commands.py` dict-merge |
+
+### Before / after diff snippet
+
+**Stock**, one record changes, diff touches every record:
+
+```diff
+- "modified": "2025-05-17 09:14:22.391823",
++ "modified": "2025-05-17 11:02:01.847551",
+... (× 200 records, all unchanged but reordered or re-stamped) ...
+```
+
+**This app**, same change, diff is bounded to the actual edit:
+
+```diff
+   "label": "Reference ID",
++  "description": "External payment processor reference",
+   "fieldtype": "Data",
+```
+
+One field added → exactly one hunk in exactly one file (`fixtures/custom_field/issue.json` if you touched Issue).
 
 ## Two adoption paths
 
