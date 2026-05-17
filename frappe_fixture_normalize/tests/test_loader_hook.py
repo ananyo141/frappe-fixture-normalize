@@ -18,9 +18,9 @@ import uuid
 from pathlib import Path
 
 import frappe
-from frappe.tests import IntegrationTestCase
 
 from frappe_fixture_normalize.loader import import_split_fixtures
+from frappe_fixture_normalize.tests._compat import IntegrationTestCase
 
 
 def _custom_field_record(name: str, fieldname: str) -> dict:

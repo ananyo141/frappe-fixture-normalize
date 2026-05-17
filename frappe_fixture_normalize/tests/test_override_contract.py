@@ -17,8 +17,9 @@ would silently revert our override.
 
 from __future__ import annotations
 
-from frappe.tests import IntegrationTestCase
 from frappe.utils import bench_helper
+
+from frappe_fixture_normalize.tests._compat import IntegrationTestCase
 
 
 class TestExportFixturesOverrideContract(IntegrationTestCase):

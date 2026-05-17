@@ -44,8 +44,18 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   integration:
-    name: Frappe integration (bench run-tests)
+    name: Frappe integration (${{ matrix.frappe_branch }} on py${{ matrix.python }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - frappe_branch: version-15
+            python: "3.11"
+            node: "20"
+          - frappe_branch: version-16
+            python: "3.14"
+            node: "24"
     services:
       mariadb:
         image: mariadb:10.6
@@ -74,11 +84,11 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: ${{ matrix.python }}
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: ${{ matrix.node }}
 
       - name: Install system deps
         run: |
@@ -92,7 +102,7 @@ jobs:
 
       - name: Bootstrap bench + site
         run: |
-          bench init --skip-redis-config-generation --frappe-branch version-16 --skip-assets test-bench
+          bench init --skip-redis-config-generation --frappe-branch ${{ matrix.frappe_branch }} --skip-assets test-bench
           cd test-bench
           mkdir -p sites
           cat > sites/common_site_config.json <<JSON

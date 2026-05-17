@@ -79,6 +79,20 @@ fixture_normalize_split_by = {
 }
 ```
 
+## Supported Frappe versions
+
+CI verifies the app on every push against:
+
+| Frappe | Python | Node |
+|---|---|---|
+| `version-15` | 3.11 | 20 |
+| `version-16` | 3.14 | 24 |
+
+The test suite uses a `frappe_fixture_normalize/tests/_compat.py` shim so the
+same L2 tests run on both branches — `IntegrationTestCase` resolves to
+`frappe.tests.IntegrationTestCase` on v16 and `frappe.tests.utils.FrappeTestCase`
+on v15.
+
 ## License
 
 MIT

@@ -132,6 +132,7 @@ Layers:
 | 88 | Override docstring survives frappe internals | L2 | `test_override_contract.py::test_our_command_help_text_present` |
 | 89 | Explicit-name commands coexist with override | L2 | `test_override_contract.py::test_explicit_export_clean_fixtures_also_registered` |
 | 90 | CI runs override fingerprint on every push | L4 | `.github/workflows/ci.yml` integration job now invokes `tests/e2e/08_override_active.sh` against a freshly bootstrapped bench |
+| 91 | Compat across frappe v15 / v16 | L4 | CI matrix runs the integration job for `frappe_branch=version-15,version-16` with the matching Python/Node. `frappe_fixture_normalize/tests/_compat.py` resolves `IntegrationTestCase` to `frappe.tests.utils.FrappeTestCase` on v15 and `frappe.tests.IntegrationTestCase` on v16 |
 
 ---
 
