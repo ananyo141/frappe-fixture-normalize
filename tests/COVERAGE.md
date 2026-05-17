@@ -127,6 +127,7 @@ Layers:
 | 83 | Loader idempotence (delete + migrate) | L3 | `tests/e2e/05_idempotence.sh` |
 | 84 | Pre-commit framework integration | L3 | `tests/e2e/06_pre_commit_framework.sh` (cross-ref row 59) |
 | 85 | Legacy flat-file split migration | L3 | `tests/e2e/07_legacy_split.sh` |
+| 86 | `bench export-fixtures` override picked over frappe's | L3 | `tests/e2e/08_override_active.sh` (verifies both help-text fingerprint + pipeline-output fingerprint when invoking stock command name) |
 
 ---
 
