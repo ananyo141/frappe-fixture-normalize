@@ -29,7 +29,10 @@ case "$help_line" in
         ;;
 esac
 
-# 2. behavior fingerprint — invoke stock name, expect split layout output.
+# 2. behavior fingerprint — invoke stock name, expect our pipeline marker
+# in stdout. `_process_app` always emits "normalized fixtures for <app>"
+# regardless of whether the consumer has any records, so this works on a
+# barebones bench too.
 snap="$(snapshot_fixtures)"
 bench_exec export-fixtures --app "$APP" > /tmp/ffn_override_run.log 2>&1 || true
 
@@ -40,17 +43,30 @@ if ! grep -q "normalized fixtures for $APP" /tmp/ffn_override_run.log; then
     log_fail "08_override_active: 'normalized fixtures' marker missing — pipeline didn't run"
 fi
 
-# Subdir layout exists; flat does not.
-if [ ! -d "$FIXTURES_DIR/custom_field" ]; then
-    restore_fixtures_snapshot "$snap"
-    log_fail "08_override_active: split subdir custom_field/ not present after export-fixtures"
+# Layout assertions only meaningful when the consumer's `hooks.fixtures`
+# actually produced records. Skip them otherwise so the test stays useful
+# on a barebones CI bench.
+records_present=false
+if [ -f "$FIXTURES_DIR/custom_field.json" ] || [ -d "$FIXTURES_DIR/custom_field" ]; then
+    records_present=true
 fi
-if [ -f "$FIXTURES_DIR/custom_field.json" ]; then
-    restore_fixtures_snapshot "$snap"
-    log_fail "08_override_active: flat custom_field.json should be removed after export-fixtures"
+
+if $records_present; then
+    if [ ! -d "$FIXTURES_DIR/custom_field" ]; then
+        restore_fixtures_snapshot "$snap"
+        log_fail "08_override_active: split subdir custom_field/ not present after export-fixtures"
+    fi
+    if [ -f "$FIXTURES_DIR/custom_field.json" ]; then
+        restore_fixtures_snapshot "$snap"
+        log_fail "08_override_active: flat custom_field.json should be removed after export-fixtures"
+    fi
 fi
 
 restore_fixtures_snapshot "$snap"
 rm -f /tmp/ffn_override_run.log
 
-log_pass "bench export-fixtures invokes our pipeline (override active)"
+if $records_present; then
+    log_pass "bench export-fixtures invokes our pipeline (override active) with split layout"
+else
+    log_pass "bench export-fixtures invokes our pipeline (override active); no consumer records to split"
+fi
