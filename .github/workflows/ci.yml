@@ -125,10 +125,19 @@ jobs:
           cd test-bench
           bench --site test_site.localhost run-tests --app frappe_fixture_normalize
 
+      - name: Run override-active e2e fingerprint
+        run: |
+          cd test-bench
+          BENCH_DIR="$PWD" SITE=test_site.localhost APP=frappe_fixture_normalize \
+              bash apps/frappe_fixture_normalize/tests/e2e/08_override_active.sh
+
   e2e:
-    name: End-to-end shell scenarios
+    name: End-to-end shell scenarios (apex-state dependent)
     runs-on: ubuntu-latest
     needs: integration
-    if: false  # Enable once bench environment can be reproduced in CI; meanwhile run locally.
+    if: false  # Other e2e scripts assume populated Custom Field rows and a
+               # consumer app with fixtures — only viable against a real
+               # client bench, not a barebones CI bench. Run locally:
+               # `bash tests/e2e/run_all.sh` with BENCH_DIR/SITE/APP set.
     steps:
       - run: echo "E2E suite runs locally; see tests/e2e/README.md"

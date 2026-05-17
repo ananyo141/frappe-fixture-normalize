@@ -128,6 +128,10 @@ Layers:
 | 84 | Pre-commit framework integration | L3 | `tests/e2e/06_pre_commit_framework.sh` (cross-ref row 59) |
 | 85 | Legacy flat-file split migration | L3 | `tests/e2e/07_legacy_split.sh` |
 | 86 | `bench export-fixtures` override picked over frappe's | L3 | `tests/e2e/08_override_active.sh` (verifies both help-text fingerprint + pipeline-output fingerprint when invoking stock command name) |
+| 87 | Override contract against real frappe API | L2 | `frappe_fixture_normalize/tests/test_override_contract.py::test_our_export_fixtures_wins_dict_merge` — calls `frappe.utils.bench_helper.get_app_groups()` directly; catches upstream merge-semantics regressions |
+| 88 | Override docstring survives frappe internals | L2 | `test_override_contract.py::test_our_command_help_text_present` |
+| 89 | Explicit-name commands coexist with override | L2 | `test_override_contract.py::test_explicit_export_clean_fixtures_also_registered` |
+| 90 | CI runs override fingerprint on every push | L4 | `.github/workflows/ci.yml` integration job now invokes `tests/e2e/08_override_active.sh` against a freshly bootstrapped bench |
 
 ---
 
