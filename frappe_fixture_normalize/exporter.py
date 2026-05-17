@@ -78,7 +78,7 @@ def process_app_fixtures_dir(
 
     # Second pass: any remaining flat `*.json` files get normalized in place.
     for path in sorted(fixtures_dir.glob("*.json")):
-        if path.stem in seen_doctypes:
+        if path.stem in seen_doctypes:  # pragma: no cover - defensive; pass 1 unlinks the flat
             continue
         records = _read_records(path)
         if records is None:

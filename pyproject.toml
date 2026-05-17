@@ -9,12 +9,41 @@ dependencies = [
     # "frappe~=15.0.0" # Installed and managed by bench.
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=7",
+    "pytest-cov>=5",
+    "click>=8",
+]
+
 [build-system]
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.bench.dev-dependencies]
 # package_name = "~=1.1.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=frappe_fixture_normalize --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["frappe_fixture_normalize"]
+omit = [
+    "frappe_fixture_normalize/tests/*",
+    "frappe_fixture_normalize/hooks.py",
+    "frappe_fixture_normalize/patches.txt",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if typing.TYPE_CHECKING:",
+]
+show_missing = true
+skip_covered = false
 
 [tool.ruff]
 line-length = 120

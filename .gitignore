@@ -4,3 +4,11 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+
+# Coverage artifacts
+.coverage
+htmlcov/
+coverage.xml
+
+# CI artifacts
+.github/workflows/_local/

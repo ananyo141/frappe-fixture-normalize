@@ -114,3 +114,88 @@ def test_empty_fixtures_dir_noop(tmp_path):
 
 def test_missing_fixtures_dir_noop(tmp_path):
     process_app_fixtures_dir(tmp_path / "does_not_exist", split_by_config={})
+
+
+def test_corrupted_flat_file_skipped(tmp_path):
+    """A flat file with malformed JSON must not crash the run; it is left
+    untouched so a human can inspect."""
+    fixtures = tmp_path / "fixtures"
+    fixtures.mkdir()
+    bad = fixtures / "workflow.json"
+    bad.write_text("{not json")
+    process_app_fixtures_dir(fixtures, split_by_config={})
+    assert bad.read_text() == "{not json"
+
+
+def test_corrupted_split_file_skipped_on_reread(tmp_path):
+    """When re-collecting records from an existing split subdir, a malformed
+    member file is skipped rather than aborting the export."""
+    fixtures = tmp_path / "fixtures"
+    sub = fixtures / "custom_field"
+    sub.mkdir(parents=True)
+    bad = sub / "broken.json"
+    bad.write_text("{broken")
+    good = sub / "issue.json"
+    write_json(good, [{"name": "Issue-foo", "doctype": "Custom Field", "dt": "Issue"}])
+    process_app_fixtures_dir(fixtures, split_by_config={"Custom Field": "dt"})
+    # Good file is rewritten into the correct split location.
+    assert (sub / "issue.json").exists()
+    issue_records = json.loads((sub / "issue.json").read_text())
+    assert [r["name"] for r in issue_records] == ["Issue-foo"]
+
+
+def test_single_record_array_handled(tmp_path):
+    fixtures = tmp_path / "fixtures"
+    fixtures.mkdir()
+    records = [{"name": "Issue-foo", "doctype": "Custom Field", "dt": "Issue"}]
+    write_json(fixtures / "custom_field.json", records)
+    process_app_fixtures_dir(fixtures, split_by_config={"Custom Field": "dt"})
+    assert (fixtures / "custom_field" / "issue.json").exists()
+    out = json.loads((fixtures / "custom_field" / "issue.json").read_text())
+    assert [r["name"] for r in out] == ["Issue-foo"]
+
+
+def test_subdir_with_only_non_json_treated_as_empty(tmp_path):
+    """If a split subdir exists but contains no `.json` files, behave as if
+    the doctype has no records on disk."""
+    fixtures = tmp_path / "fixtures"
+    sub = fixtures / "custom_field"
+    sub.mkdir(parents=True)
+    (sub / "README.md").write_text("notes")
+    process_app_fixtures_dir(fixtures, split_by_config={"Custom Field": "dt"})
+    # README untouched, no spurious json files written.
+    assert (sub / "README.md").exists()
+    assert list(sub.glob("*.json")) == []
+
+
+def test_split_config_for_unseen_doctype_is_noop(tmp_path):
+    """A doctype configured for splitting but with no flat file and no subdir
+    must not error and must not create empty artifacts."""
+    fixtures = tmp_path / "fixtures"
+    fixtures.mkdir()
+    process_app_fixtures_dir(fixtures, split_by_config={"Custom Field": "dt"})
+    assert list(fixtures.iterdir()) == []
+
+
+def test_non_array_top_level_json_skipped(tmp_path):
+    """A `*.json` file at the top of fixtures/ whose root is an object (not a
+    list of records) must be left untouched — it isn't a fixture file."""
+    fixtures = tmp_path / "fixtures"
+    fixtures.mkdir()
+    meta = fixtures / "metadata.json"
+    meta.write_text(json.dumps({"version": 1}))
+    process_app_fixtures_dir(fixtures, split_by_config={})
+    assert json.loads(meta.read_text()) == {"version": 1}
+
+
+def test_split_subdir_non_list_json_member_ignored(tmp_path):
+    """Inside a split subdir, a `.json` file that is an object (not array) is
+    skipped during reread — does not raise."""
+    fixtures = tmp_path / "fixtures"
+    sub = fixtures / "custom_field"
+    sub.mkdir(parents=True)
+    (sub / "object.json").write_text(json.dumps({"not": "an array"}))
+    (sub / "issue.json").write_text(json.dumps([{"name": "Issue-foo", "doctype": "Custom Field", "dt": "Issue"}]))
+    process_app_fixtures_dir(fixtures, split_by_config={"Custom Field": "dt"})
+    out = json.loads((sub / "issue.json").read_text())
+    assert [r["name"] for r in out] == ["Issue-foo"]

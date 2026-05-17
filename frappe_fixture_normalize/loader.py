@@ -10,7 +10,7 @@ errors).
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 
 
@@ -29,16 +29,37 @@ def iter_split_fixture_files(app_path: Path) -> Iterator[Path]:
             yield path
 
 
-def import_split_fixtures() -> None:
-    """Frappe `after_migrate` hook entry point."""
+def _discover_app_paths() -> Iterator[Path]:
+    """Yield (real) frappe app paths from `frappe.get_installed_apps`.
+
+    Tests should instead pass paths explicitly to `import_split_fixtures` so
+    they don't need to globally mock `frappe.get_installed_apps` (mocking that
+    breaks any internal Frappe code that consults the installed-apps list).
+    """
     import frappe
-    from frappe.core.doctype.data_import.data_import import import_doc
 
     for app in frappe.get_installed_apps():
         try:
-            app_path = Path(frappe.get_app_path(app))
+            yield Path(frappe.get_app_path(app))
         except Exception:
             continue
+
+
+def import_split_fixtures(app_paths: Iterable[Path] | None = None) -> None:
+    """Frappe `after_migrate` hook entry point.
+
+    `app_paths` is the iterable of app root directories to scan for split
+    fixtures. When omitted, defaults to every installed app's path. Tests
+    can pass an explicit list of tempdirs to exercise the loader without
+    mocking `frappe.get_installed_apps` globally.
+    """
+    import frappe
+    from frappe.core.doctype.data_import.data_import import import_doc
+
+    if app_paths is None:
+        app_paths = list(_discover_app_paths())
+
+    for app_path in app_paths:
         for path in iter_split_fixture_files(app_path):
             try:
                 import_doc(str(path))

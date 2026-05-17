@@ -2,6 +2,11 @@
 
 Wraps the standard `bench export-fixtures` and post-processes the written
 files into a deterministic, merge-safe layout.
+
+The `*_for_site` wrappers manage Frappe lifecycle (init/connect/destroy) so
+they can be invoked from a bare `bench` shell. Tests running inside an
+already-connected Frappe context should call `do_export_and_normalize` /
+`do_normalize_only` directly.
 """
 
 from __future__ import annotations
@@ -33,20 +38,38 @@ def _resolve_split_config(app: str) -> dict[str, str]:
     return dict(DEFAULT_SPLIT_BY)
 
 
-def _run_for_site(site: str, app: str | None) -> None:
+def _process_app(app: str) -> None:
+    app_path = Path(frappe.get_app_path(app))
+    fixtures_dir = app_path / "fixtures"
+    split_config = _resolve_split_config(app)
+    process_app_fixtures_dir(fixtures_dir, split_config)
+    click.echo(f"normalized fixtures for {app} at {fixtures_dir}")
+
+
+def do_export_and_normalize(app: str | None) -> None:
+    """Frappe must already be init/connected. Calls standard export then
+    post-processes."""
     from frappe.utils.fixtures import export_fixtures
 
+    export_fixtures(app=app)
+    apps = [app] if app else frappe.get_installed_apps()
+    for current_app in apps:
+        _process_app(current_app)
+
+
+def do_normalize_only(app: str | None) -> None:
+    """Frappe must already be init/connected. Re-normalizes on-disk files
+    without re-querying the DB."""
+    apps = [app] if app else frappe.get_installed_apps()
+    for current_app in apps:
+        _process_app(current_app)
+
+
+def _run_for_site(site: str, app: str | None) -> None:
     frappe.init(site)
     frappe.connect()
     try:
-        export_fixtures(app=app)
-        apps = [app] if app else frappe.get_installed_apps()
-        for current_app in apps:
-            app_path = Path(frappe.get_app_path(current_app))
-            fixtures_dir = app_path / "fixtures"
-            split_config = _resolve_split_config(current_app)
-            process_app_fixtures_dir(fixtures_dir, split_config)
-            click.echo(f"normalized fixtures for {current_app} at {fixtures_dir}")
+        do_export_and_normalize(app)
     finally:
         frappe.destroy()
 
@@ -55,13 +78,7 @@ def _normalize_for_site(site: str, app: str | None) -> None:
     frappe.init(site)
     frappe.connect()
     try:
-        apps = [app] if app else frappe.get_installed_apps()
-        for current_app in apps:
-            app_path = Path(frappe.get_app_path(current_app))
-            fixtures_dir = app_path / "fixtures"
-            split_config = _resolve_split_config(current_app)
-            process_app_fixtures_dir(fixtures_dir, split_config)
-            click.echo(f"normalized fixtures for {current_app} at {fixtures_dir}")
+        do_normalize_only(app)
     finally:
         frappe.destroy()
 
