@@ -20,6 +20,12 @@ test = [
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
 
+[tool.bench]
+# CI-verified compatibility range. bench does not enforce this today;
+# it documents which Frappe branches the test suite is exercised
+# against on every push to `main`.
+frappe_version = ">=15.0,<17.0"
+
 [tool.bench.dev-dependencies]
 # package_name = "~=1.1.0"
 

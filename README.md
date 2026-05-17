@@ -1,5 +1,7 @@
 # frappe_fixture_normalize
 
+[![CI](https://github.com/ananyo141/frappe-fixture-normalize/actions/workflows/ci.yml/badge.svg)](https://github.com/ananyo141/frappe-fixture-normalize/actions/workflows/ci.yml)
+
 Stable, merge-safe fixture export and import for Frappe apps.
 
 ## What it solves

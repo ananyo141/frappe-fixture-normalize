@@ -53,9 +53,16 @@ jobs:
           - frappe_branch: version-15
             python: "3.11"
             node: "20"
+            experimental: false
           - frappe_branch: version-16
             python: "3.14"
             node: "24"
+            experimental: false
+          - frappe_branch: develop
+            python: "3.14"
+            node: "24"
+            experimental: true   # non-blocking: catches v17-track breakage early
+    continue-on-error: ${{ matrix.experimental }}
     services:
       mariadb:
         image: mariadb:10.6
