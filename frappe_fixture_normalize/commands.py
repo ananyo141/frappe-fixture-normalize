@@ -34,7 +34,16 @@ def _resolve_split_config(app: str) -> dict[str, str]:
                 merged.update(entry)
         return merged or dict(DEFAULT_SPLIT_BY)
     if isinstance(hooks_value, dict):
-        return dict(hooks_value)
+        # Frappe wraps hook values in single-element lists; unwrap them.
+        unwrapped: dict[str, str] = {}
+        for k, v in hooks_value.items():
+            if isinstance(v, list) and len(v) == 1:
+                unwrapped[k] = v[0]
+            elif isinstance(v, list) and len(v) == 0:
+                continue
+            else:
+                unwrapped[k] = v
+        return unwrapped or dict(DEFAULT_SPLIT_BY)
     return dict(DEFAULT_SPLIT_BY)
 
 
